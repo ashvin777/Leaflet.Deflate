@@ -1,7 +1,9 @@
 L.Deflate = function(options) {
     var removedPaths = [];
     var minSize = options.minSize || 10;
-    var layer, map;
+    var markers, layer, map;
+    var zoomBins = {};
+    var startZoom;
 
     function isCollapsed(path, zoom) {
         var bounds = path.getBounds();
@@ -37,7 +39,10 @@ L.Deflate = function(options) {
 
     function layeradd(event) {
         var feature = event.layer;
-        if (!feature._layers && feature.getBounds && !feature.zoomThreshold && !feature.marker) {
+        if (feature instanceof L.Marker && layer !== markers) {
+            layer.removeLayer(feature);
+            markers.addLayer(feature);
+        } else if (!feature._layers && feature.getBounds && !feature.zoomThreshold && !feature.marker) {
             var zoomThreshold = getZoomThreshold(feature);
             var marker = L.marker(feature.getBounds().getCenter());
 
@@ -57,46 +62,85 @@ L.Deflate = function(options) {
 
             feature.zoomThreshold = zoomThreshold;
             feature.marker = marker;
+            feature.setStyle({'color': '#3388ff'})
 
-            if (map.getZoom() <= zoomThreshold) {
+            if (layer !== markers) {
                 layer.removeLayer(feature);
-                layer.addLayer(feature.marker);
-                removedPaths.push(feature);
+                markers.addLayer(feature);
+            }
+            
+            if (map.getZoom() <= zoomThreshold) {
+                markers.removeLayer(feature);
+                markers.addLayer(feature.marker);
+            }
+
+            if (zoomBins[zoomThreshold]) {
+                zoomBins[zoomThreshold].push(feature);
+            } else {
+                zoomBins[zoomThreshold] = [feature];
             }
         }
+    }
+
+    function zoomstart() {
+        startZoom = map.getZoom();
     }
 
     function zoomend() {
-        if (layer !== map) { map.removeLayer(layer); }
-        var removedTemp = [];
+        var bounds = map.getBounds();
+        var startTime = Date.now();
+        var endZoom = map.getZoom();
+        var show = startZoom < endZoom;
+        var layersToAdd = [];
+        var layersToRemove = [];
 
-        layer.eachLayer(function (feature) {
-            if (map.getZoom() <= feature.zoomThreshold) {
-                layer.removeLayer(feature);
-                layer.addLayer(feature.marker);
-                removedTemp.push(feature);
-            }
-        });
+        var processed = 0;
+        var start = (show ? startZoom : endZoom);
+        var end = (show ? endZoom : startZoom);
+        for (var i = start; i <= end; i++) {
+            if (zoomBins[i]) {
+                var features = zoomBins[i];
+                processed += features.length;
 
-        for (var i = 0; i < removedPaths.length; i++) {
-            var feature = removedPaths[i];
-            if (map.getZoom() > feature.zoomThreshold) {
-                layer.removeLayer(feature.marker);
-                layer.addLayer(feature);
-                removedPaths.splice(i, 1);
-                i = i - 1;
+                for (var j = 0, len = features.length; j < len; j++) {
+                    if (features[j].getBounds().overlaps(bounds)) {
+                        if (show) {
+                            layersToRemove.push(features[j].marker);
+                            layersToAdd.push(features[j]);
+                        } else {
+                            layersToRemove.push(features[j]);
+                            layersToAdd.push(features[j].marker);
+                        }
+                    }
+                }
             }
         }
-
-        if (layer !== map) { map.addLayer(layer); }
-        removedPaths = removedPaths.concat(removedTemp);
+        markers.removeLayers(layersToRemove);
+        markers.addLayers(layersToAdd);
+        var endTime = Date.now();
+        console.log(startZoom + '-->' + endZoom + ': ' + (endTime - startTime))
+        console.log(startZoom + '-->' + endZoom + ': ' + processed)
+        console.log('########################################################')
     }
 
     function addTo(addToMap) {
-        layer = options.featureGroup || addToMap;
         map = addToMap;
+        markers = layer = options.featureGroup || addToMap;
+        if (options.cluster) {
+            markers = L.markerClusterGroup();
+            map.addLayer(markers);
+        }
+        if (layer !== map) {
+            layer.on('layerremove', function() {
+                map.removeLayer(layer);
+                if (markers !== layer) {
+                    map.removeLayer(markers);
+                }
+            });
+        }
 
         layer.on('layeradd', layeradd);
+        map.on('zoomstart', zoomstart);
         map.on('zoomend', zoomend);
     }
 
