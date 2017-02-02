@@ -5,9 +5,30 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
 
-        <link rel="stylesheet" href="http://unpkg.com/leaflet@1.0.0/dist/leaflet.css" />
-        <script src="http://unpkg.com/leaflet@1.0.0/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="http://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+        <script src="http://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
         <script src="../src/L.Deflate.js"></script>
+        <style>
+            #map {
+                background-color: #ffffff;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 1;
+            }
+
+            #mocha {
+                background-color: #ffffff;
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 2;
+            }
+        </style>
     </head>
     <body>
         <div id="mocha"></div>
