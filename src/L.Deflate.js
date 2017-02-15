@@ -54,7 +54,7 @@ L.Deflate = L.LayerGroup.extend({
                 var marker = L.marker(layer.getBounds().getCenter());
 
                 if (layer._popupHandlersAdded) {
-                    marker.bindPopup(layer._popup._content)
+                    marker.bindPopup(layer._popup._content);
                 }
 
                 var events = layer._events;
@@ -62,7 +62,7 @@ L.Deflate = L.LayerGroup.extend({
                     if (events.hasOwnProperty(event)) {
                         var listeners = events[event];
                         for (var i = 0, len = listeners.length; i < len; i++) {
-                            marker.on(event, listeners[i].fn) 
+                            marker.on(event, listeners[i].fn);
                         }
                     }
                 }
@@ -81,7 +81,7 @@ L.Deflate = L.LayerGroup.extend({
         }
     },
 
-    removeLayer(layer) {
+    removeLayer: function(layer) {
         if (layer instanceof L.FeatureGroup) {
             for (var i in layer._layers) {
                 this.removeLayer(layer._layers[i]);
@@ -125,14 +125,14 @@ L.Deflate = L.LayerGroup.extend({
 
     onAdd: function(map) {
         this._featureGroup.addTo(map);
-        this._map.on('zoomend', this._deflate, this);
-        this._map.on('moveend', this._deflate, this);
+        this._map.on("zoomend", this._deflate, this);
+        this._map.on("moveend", this._deflate, this);
     },
 
     onRemove: function(map) {
         map.removeLayer(this._featureGroup);
-        this._map.off('zoomend', this._deflate, this);
-        this._map.off('moveend', this._deflate, this);
+        this._map.off("zoomend", this._deflate, this);
+        this._map.off("moveend", this._deflate, this);
     }
 });
 
